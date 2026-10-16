@@ -453,6 +453,16 @@ class LivePortraitPipeline(object):
                 else:
                     I_p_pstbk = paste_back(I_p_i, crop_info['M_c2o'], source_rgb_lst[0], mask_ori_float)
                 I_p_pstbk_lst.append(I_p_pstbk)
+                if i == 0:  # YSR fork diagnostics: frame 0 at each stage, so quality loss can be located without guessing
+                    try:
+                        os.makedirs(args.output_dir, exist_ok=True)
+                        _src0 = source_rgb_lst[i] if flag_is_source_video else source_rgb_lst[0]
+                        cv2.imwrite(osp.join(args.output_dir, 'ysr_src_frame0.png'), cv2.cvtColor(_src0, cv2.COLOR_RGB2BGR))
+                        cv2.imwrite(osp.join(args.output_dir, 'ysr_crop_frame0.png'), cv2.cvtColor(I_p_i, cv2.COLOR_RGB2BGR))
+                        cv2.imwrite(osp.join(args.output_dir, 'ysr_pstbk_frame0.png'), cv2.cvtColor(I_p_pstbk, cv2.COLOR_RGB2BGR))
+                        log(f"YSR diag: src {_src0.shape} {_src0.dtype}, crop {I_p_i.shape}, pstbk {I_p_pstbk.shape}")
+                    except Exception as _e:
+                        log(f"YSR diag failed: {_e}")
 
         mkdir(args.output_dir)
         wfp_concat = None
