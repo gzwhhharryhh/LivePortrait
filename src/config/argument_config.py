@@ -19,7 +19,7 @@ class ArgumentConfig(PrintableConfig):
 
     ########## inference arguments ##########
     flag_use_half_precision: bool = True  # whether to use half precision (FP16). If black boxes appear, it might be due to GPU incompatibility; set to False.
-    flag_crop_driving_video: bool = False  # whether to crop the driving video, if the given driving info is a video
+    flag_crop_driving_video: bool = True   # YSR fork default  # whether to crop the driving video, if the given driving info is a video
     device_id: int = 0  # gpu device id
     flag_force_cpu: bool = False  # force cpu inference, WIP!
     flag_normalize_lip: bool = False  # whether to let the lip to close state before animation, only take effect when flag_eye_retargeting and flag_lip_retargeting is False
@@ -34,15 +34,20 @@ class ArgumentConfig(PrintableConfig):
     driving_multiplier: float = 1.0 # be used only when driving_option is "expression-friendly"
     driving_smooth_observation_variance: float = 3e-7  # smooth strength scalar for the animated video when the input is a source video, the larger the number, the smoother the animated video; too much smoothness would result in loss of motion accuracy
     audio_priority: Literal['source', 'driving'] = 'driving'  # whether to use the audio from source or driving video
-    animation_region: Literal["exp", "pose", "lip", "eyes", "all"] = "all" # the region where the animation was performed, "exp" means the expression, "pose" means the head pose, "all" means all regions
+    animation_region: Literal["exp", "pose", "lip", "eyes", "all"] = "exp"   # YSR fork default: expression only (pose on a video source detaches the face from its hair/body) # the region where the animation was performed, "exp" means the expression, "pose" means the head pose, "all" means all regions
     ########## source crop arguments ##########
     det_thresh: float = 0.15 # detection threshold
-    scale: float = 2.3  # the ratio of face area is smaller if scale is larger
+    scale: float = 1.8   # YSR fork default: tighter crop = more pixels per face  # the ratio of face area is smaller if scale is larger
     vx_ratio: float = 0  # the ratio to move the face to left or right in cropping space
     vy_ratio: float = -0.125  # the ratio to move the face to up or down in cropping space
     flag_do_rot: bool = True  # whether to conduct the rotation when flag_do_crop is True
-    source_max_dim: int = 1280 # the max dim of height and width of source image or video, you can change it to a larger number, e.g., 1920
-    source_division: int = 2 # make sure the height and width of source image or video can be divided by this number
+    source_max_dim: int = 1920   # YSR fork default: never silently downscale a 1080p+ source # the max dim of height and width of source image or video, you can change it to a larger number, e.g., 1920
+    source_division: int = 2
+    # ---- YSR fork ----
+    flag_face_only_pasteback: bool = True  # paste back only the face (landmark hull + forehead); hair/background keep the original pixels
+    pasteback_forehead: float = 0.35  # how far above the brows the face mask reaches, as a fraction of face height
+    pasteback_feather: int = 16  # feather (px, crop space) on the face mask edge
+    flag_allow_pose: bool = False  # pose transfer on a VIDEO source is refused unless this is set (it detaches the face) # make sure the height and width of source image or video can be divided by this number
 
     ########## driving crop arguments ##########
     scale_crop_driving_video: float = 2.2  # scale factor for cropping driving video

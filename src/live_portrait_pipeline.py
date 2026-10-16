@@ -19,7 +19,7 @@ from .config.crop_config import CropConfig
 from .utils.cropper import Cropper
 from .utils.camera import get_rotation_matrix
 from .utils.video import images2video, concat_frames, get_fps, add_audio_to_video, has_audio_stream
-from .utils.crop import prepare_paste_back, paste_back
+from .utils.crop import prepare_paste_back, paste_back, face_mask_from_lmk
 from .utils.io import load_image_rgb, load_video, resize_to_limit, dump, load
 from .utils.helper import mkdir, basename, dct2device, is_video, is_template, remove_suffix, is_image, is_square_video, calc_motion_multiplier
 from .utils.filter import smooth
@@ -91,6 +91,9 @@ class LivePortraitPipeline(object):
             source_rgb_lst = [img_rgb]
         elif is_video(args.source):
             flag_is_source_video = True
+            if inf_cfg.animation_region in ("all", "pose") and not inf_cfg.flag_allow_pose:
+                log(f"YSR fork: animation_region='{inf_cfg.animation_region}' on a VIDEO source transfers head pose and detaches the face from the source hair/body; forcing 'exp'. Pass --flag_allow_pose to override.", style="bold red")
+                inf_cfg.animation_region = "exp"
             source_rgb_lst = load_video(args.source)
             source_rgb_lst = [resize_to_limit(img, inf_cfg.source_max_dim, inf_cfg.source_division) for img in source_rgb_lst]
             source_fps = int(get_fps(args.source))
@@ -263,7 +266,8 @@ class LivePortraitPipeline(object):
                     lip_delta_before_animation = self.live_portrait_wrapper.retarget_lip(x_s, combined_lip_ratio_tensor_before_animation)
 
             if inf_cfg.flag_pasteback and inf_cfg.flag_do_crop and inf_cfg.flag_stitching:
-                mask_ori_float = prepare_paste_back(inf_cfg.mask_crop, crop_info['M_c2o'], dsize=(source_rgb_lst[0].shape[1], source_rgb_lst[0].shape[0]))
+                mask_crop_used = face_mask_from_lmk(crop_info['lmk_crop'], dsize=inf_cfg.mask_crop.shape[0], forehead=inf_cfg.pasteback_forehead, feather=inf_cfg.pasteback_feather) if inf_cfg.flag_face_only_pasteback else inf_cfg.mask_crop
+                mask_ori_float = prepare_paste_back(mask_crop_used, crop_info['M_c2o'], dsize=(source_rgb_lst[0].shape[1], source_rgb_lst[0].shape[0]))
 
         ######## animate ########
         if flag_is_driving_video or (flag_is_source_video and not flag_is_driving_video):
@@ -304,7 +308,8 @@ class LivePortraitPipeline(object):
                     eye_delta_before_animation = self.live_portrait_wrapper.retarget_eye(x_s, combined_eye_ratio_tensor_before_animation)
 
                 if inf_cfg.flag_pasteback and inf_cfg.flag_do_crop and inf_cfg.flag_stitching:  # prepare for paste back
-                    mask_ori_float = prepare_paste_back(inf_cfg.mask_crop, source_M_c2o_lst[i], dsize=(source_rgb_lst[i].shape[1], source_rgb_lst[i].shape[0]))
+                    mask_crop_used = face_mask_from_lmk(source_lmk, dsize=inf_cfg.mask_crop.shape[0], forehead=inf_cfg.pasteback_forehead, feather=inf_cfg.pasteback_feather) if (inf_cfg.flag_face_only_pasteback and source_lmk is not None) else inf_cfg.mask_crop
+                    mask_ori_float = prepare_paste_back(mask_crop_used, source_M_c2o_lst[i], dsize=(source_rgb_lst[i].shape[1], source_rgb_lst[i].shape[0]))
             if flag_is_source_video and not flag_is_driving_video:
                 x_d_i_info = driving_template_dct['motion'][0]
             else:

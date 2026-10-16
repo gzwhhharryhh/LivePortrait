@@ -52,9 +52,14 @@ class InferenceConfig(PrintableConfig):
     driving_option: str = "pose-friendly" # "expression-friendly" or "pose-friendly"
     driving_multiplier: float = 1.0
     driving_smooth_observation_variance: float = 3e-7 # smooth strength scalar for the animated video when the input is a source video, the larger the number, the smoother the animated video; too much smoothness would result in loss of motion accuracy
-    source_max_dim: int = 1280 # the max dim of height and width of source image or video
-    source_division: int = 2 # make sure the height and width of source image or video can be divided by this number
-    animation_region: Literal["exp", "pose", "lip", "eyes", "all"] = "all" # the region where the animation was performed, "exp" means the expression, "pose" means the head pose
+    source_max_dim: int = 1920 # the max dim of height and width of source image or video
+    source_division: int = 2
+    # ---- YSR fork ----
+    flag_face_only_pasteback: bool = True
+    pasteback_forehead: float = 0.35
+    pasteback_feather: int = 16
+    flag_allow_pose: bool = False # make sure the height and width of source image or video can be divided by this number
+    animation_region: Literal["exp", "pose", "lip", "eyes", "all"] = "exp" # the region where the animation was performed, "exp" means the expression, "pose" means the head pose
 
     # NOT EXPORTED PARAMS
     lip_normalize_threshold: float = 0.03 # threshold for flag_normalize_lip

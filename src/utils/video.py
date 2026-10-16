@@ -30,7 +30,7 @@ def images2video(images, wfp, **kwargs):
     pixelformat = kwargs.get('pixelformat', 'yuv420p')  # video pixel format
     image_mode = kwargs.get('image_mode', 'rgb')
     macro_block_size = kwargs.get('macro_block_size', 2)
-    ffmpeg_params = ['-crf', str(kwargs.get('crf', 18))]
+    ffmpeg_params = ['-crf', str(kwargs.get('crf', 14))]   # YSR fork: 18 -> 14
 
     writer = imageio.get_writer(
         wfp, fps=fps, format=video_format,

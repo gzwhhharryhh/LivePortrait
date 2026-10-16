@@ -407,6 +407,25 @@ def average_bbox_lst(bbox_lst):
     bbox_arr = np.array(bbox_lst)
     return np.mean(bbox_arr, axis=0).tolist()
 
+def face_mask_from_lmk(lmk, dsize=512, forehead=0.35, feather=16):
+    """YSR fork: paste-back mask from the face LANDMARKS instead of the whole-crop template.
+    The template covers the entire crop (~2x the face), so hair/background inside it were replaced by the
+    512px render (upscaled, soft/blocky). This mask = convex hull of the landmarks, pushed up over the forehead
+    (landmarks stop at the eyebrows; a boundary through the brows double-exposes them), feathered. Crop space, 3ch uint8.
+    """
+    m = np.zeros((dsize, dsize), dtype=np.uint8)
+    pts = np.asarray(lmk, dtype=np.float32).reshape(-1, 2)
+    if pts.shape[0] < 5:
+        return np.full((dsize, dsize, 3), 255, dtype=np.uint8)
+    H = max(1.0, float(pts[:, 1].max() - pts[:, 1].min()))
+    eye_y = float(np.percentile(pts[:, 1], 35))
+    top = pts[pts[:, 1] < eye_y + 0.05 * H].copy(); top[:, 1] -= forehead * H
+    cv2.fillConvexPoly(m, cv2.convexHull(np.vstack([pts, top]).astype(np.int32)), 255)
+    if feather > 0:
+        m = cv2.GaussianBlur(m, (0, 0), feather)
+    return np.repeat(m[:, :, None], 3, axis=2)
+
+
 def prepare_paste_back(mask_crop, crop_M_c2o, dsize):
     """prepare mask for later image paste back
     """
